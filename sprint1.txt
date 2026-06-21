@@ -1,0 +1,11 @@
+on doit creer une annotationcontroller cote framework
+on doit creer plusieurs classes dans testapplication et l'annoter avec l'annotation creer
+cote framework :
+    cree une fonction void init dans frontcontroller:
+        -prendre la liste des classes qui sont annoter avec l'annotation
+
+    il faut connaitre les packages qui contient les classes annoter et le donner a la void init pour prendre tout les annoter avec l'annotation
+
+    et c'est dans testapplication qu'on cree initparam dans configuration et dans init param on declare les package
+    et on get dans la void init
+    et on liste cote testapplication les resultats.
