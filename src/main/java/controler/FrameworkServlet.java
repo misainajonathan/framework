@@ -1,6 +1,7 @@
 package controler;
 
 import annotation.Controller;
+import annotation.UrlMapping;
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -9,6 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,17 +18,16 @@ import java.util.List;
 public class FrameworkServlet extends HttpServlet {
 
     private List<String> annotatedClasses = new ArrayList<>();
+    private List<String> annotatedMethod = new ArrayList<>();
 
     @Override
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
         
-        // 1. Récupérer le nom du package défini dans le web.xml
         String packageToScan = config.getInitParameter("scan-package");
         
         if (packageToScan != null && !packageToScan.trim().isEmpty()) {
             try {
-                // 2. Scanner le package pour trouver les classes
                 scanPackages(packageToScan);
             } catch (Exception e) {
                 throw new ServletException("Erreur lors du scan du package : " + packageToScan, e);
@@ -44,6 +45,7 @@ public class FrameworkServlet extends HttpServlet {
         }
 
         File directory = new File(resource.getFile());
+        // System.out.println(directory);
         if (directory.exists() && directory.isDirectory()) {
             File[] files = directory.listFiles();
             if (files != null) {
@@ -52,13 +54,48 @@ public class FrameworkServlet extends HttpServlet {
                         String className = packageName + "." + file.getName().substring(0, file.getName().length() - 6);
                         Class<?> cls = Class.forName(className);
                         
-                        // 3. Vérifier si la classe possède l'annotation @Controller
                         if (cls.isAnnotationPresent(Controller.class)) {
                             annotatedClasses.add(cls.getName());
                         }
                     }
                 }
             }
+        }
+    }
+
+    private void scanMethod(String packname) throws ClassNotFoundException{
+        String path = packname.replace('.', '/');
+        ClassLoader load = Thread.currentThread().getContextClassLoader();
+        URL url = load.getResource(path);
+
+        if (url == null) {
+            return;
+        }
+
+        File fichier = new File(url.getFile());
+        if (fichier.exists() && fichier.isDirectory()) {
+            File[] fich = fichier.listFiles();
+            if (fich != null) {
+                for (File file : fich) {
+                    if (file.getName().endsWith(".class")) {
+                        String className = packname + "." + file.getName().substring(0, file.getName().length() - 6);
+                        Class<?> cls = Class.forName(className);
+
+                        if (cls.isAnnotationPresent(UrlMapping.class)) {
+                            Method[] methods = cls.getDeclaredMethods();
+                            for (Method meth : methods) {
+                                if (meth.isAnnotationPresent(UrlMapping.class)) {
+                                    annotatedMethod.add(meth.getName());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            // for (iterable_type iterable_element : iterable) {
+                
+            // }
+            System.out.println(fich);
         }
     }
 
