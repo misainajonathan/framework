@@ -1,0 +1,6 @@
+on cree une annotation UrlMapping
+on prend tout les methodes annoter avec @UrlMapping et on les mappe avec l'url correspondante.
+
+cote test:
+ce qu'on ecrit sur le navigateur on recherche qui est la methode annoter qui le correspond
+si rien ne correspond alors on affiche tout les methodes avec les classes qui leur correspondent.
