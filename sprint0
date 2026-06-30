@@ -1,9 +1,0 @@
-mcree FontServlet
-
-on doit passer tout les requetes dans une seule et unique servlet ex: doget, dopost
-
-cote framework:
--on doit passr ce servlet en .jar 
--on met dans le classpath de l'aplication de teste
-cote application:
--on doit declarer le jar dans web.xml (...-params?)
