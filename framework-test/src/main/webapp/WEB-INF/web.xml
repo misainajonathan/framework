@@ -11,6 +11,11 @@
     <servlet>
         <servlet-name>FrameworkServlet</servlet-name>
         <servlet-class>controler.FrameworkServlet</servlet-class>
+
+        <init-param>
+            <param-name>scan-package</param-name>
+            <param-value>controler</param-value>
+        </init-param>
     </servlet>
     <servlet-mapping>
         <servlet-name>FrameworkServlet</servlet-name>
