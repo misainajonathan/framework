@@ -12,13 +12,12 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.Method;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 public class FrameworkServlet extends HttpServlet {
 
-    private List<String> annotatedClasses = new ArrayList<>();
-    private List<String> annotatedMethod = new ArrayList<>();
+    private Map<String, Method> mappingUrls = new HashMap<>();
 
     @Override
     public void init(ServletConfig config) throws ServletException {
@@ -45,7 +44,6 @@ public class FrameworkServlet extends HttpServlet {
         }
 
         File directory = new File(resource.getFile());
-        // System.out.println(directory);
         if (directory.exists() && directory.isDirectory()) {
             File[] files = directory.listFiles();
             if (files != null) {
@@ -55,47 +53,17 @@ public class FrameworkServlet extends HttpServlet {
                         Class<?> cls = Class.forName(className);
                         
                         if (cls.isAnnotationPresent(Controller.class)) {
-                            annotatedClasses.add(cls.getName());
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private void scanMethod(String packname) throws ClassNotFoundException{
-        String path = packname.replace('.', '/');
-        ClassLoader load = Thread.currentThread().getContextClassLoader();
-        URL url = load.getResource(path);
-
-        if (url == null) {
-            return;
-        }
-
-        File fichier = new File(url.getFile());
-        if (fichier.exists() && fichier.isDirectory()) {
-            File[] fich = fichier.listFiles();
-            if (fich != null) {
-                for (File file : fich) {
-                    if (file.getName().endsWith(".class")) {
-                        String className = packname + "." + file.getName().substring(0, file.getName().length() - 6);
-                        Class<?> cls = Class.forName(className);
-
-                        if (cls.isAnnotationPresent(UrlMapping.class)) {
                             Method[] methods = cls.getDeclaredMethods();
                             for (Method meth : methods) {
                                 if (meth.isAnnotationPresent(UrlMapping.class)) {
-                                    annotatedMethod.add(meth.getName());
+                                    UrlMapping urlMapping = meth.getAnnotation(UrlMapping.class);
+                                    mappingUrls.put(urlMapping.value(), meth);
                                 }
                             }
                         }
                     }
                 }
             }
-            // for (iterable_type iterable_element : iterable) {
-                
-            // }
-            System.out.println(fich);
         }
     }
 
@@ -111,21 +79,36 @@ public class FrameworkServlet extends HttpServlet {
 
     private void processRequest(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         response.setContentType("text/html;charset=UTF-8");
+        String pathInfo = request.getPathInfo();
+        
         try (PrintWriter out = response.getWriter()) {
             out.println("<!DOCTYPE html>");
             out.println("<html>");
-            out.println("<head><title>Framework Scan</title></head>");
+            out.println("<head><title>Framework Mapping</title></head>");
             out.println("<body>");
-            out.println("<h1>Liste des classes annotées avec @Controller :</h1>");
             
-            if (annotatedClasses.isEmpty()) {
-                out.println("<p>Aucune classe trouvée ou annotée.</p>");
+            if (mappingUrls.containsKey(pathInfo)) {
+                Method meth = mappingUrls.get(pathInfo);
+                out.println("<h1>Méthode correspondante trouvée :</h1>");
+                out.println("<p>Classe : " + meth.getDeclaringClass().getName() + "</p>");
+                out.println("<p>Méthode : " + meth.getName() + "</p>");
             } else {
-                out.println("<ul>");
-                for (String className : annotatedClasses) {
-                    out.println("<li>" + className + "</li>");
+                out.println("<h1>Aucune méthode ne correspond à l'URL : " + pathInfo + "</h1>");
+                out.println("<h2>Liste de toutes les méthodes disponibles :</h2>");
+                if (mappingUrls.isEmpty()) {
+                    out.println("<p>Aucun mapping trouvé dans le package.</p>");
+                } else {
+                    out.println("<table border='1'>");
+                    out.println("<tr><th>URL</th><th>Classe</th><th>Méthode</th></tr>");
+                    for (Map.Entry<String, Method> entry : mappingUrls.entrySet()) {
+                        out.println("<tr>");
+                        out.println("<td>" + entry.getKey() + "</td>");
+                        out.println("<td>" + entry.getValue().getDeclaringClass().getName() + "</td>");
+                        out.println("<td>" + entry.getValue().getName() + "</td>");
+                        out.println("</tr>");
+                    }
+                    out.println("</table>");
                 }
-                out.println("</ul>");
             }
             
             out.println("</body>");
