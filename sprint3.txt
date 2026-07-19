@@ -10,4 +10,4 @@ teste:
 
 
 3 bis:
-invokena le methode, on invoque la fonction avec le map
+il faut invoquer la méthode, on invoque la fonction avec le map

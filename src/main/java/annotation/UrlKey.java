@@ -24,21 +24,21 @@ public class UrlKey {
     @Override
     public boolean equals(Object o){
         if (this == o) {
-            return false;
+            return true;
         }
-        if (o==null || getClass() == o.getClass()) {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         UrlKey autre = (UrlKey) o;
 
-        boolean memeUrl = autre.url.equals(this.url);
+        boolean memeUrl = this.url.equals(autre.url);
         boolean memetypemethode = this.methode.equals(autre.methode);
 
         return memeUrl && memetypemethode;
     }
 
     @Override
-    public int hashCode(){
+    public int hashCode(){  
         return (this.url + this.methode).hashCode();
     }
 }
