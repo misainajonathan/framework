@@ -1,0 +1,13 @@
+si par exemple 2 methode ont le meme url mapping .
+il nous faut alors une classe UrlMmethod qui prend la methode et l'url
+ex: -post method
+-get method
+
+surchargena dia mampiasa equals
+
+teste:
+-post: on dois cree un formulaire et on envoie des donnees
+
+
+3 bis:
+invokena le methode, on invoque la fonction avec le map

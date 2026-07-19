@@ -1,0 +1,1 @@
+singleton mais non prototype pour la methode c'est a dire qu'on instancie la methode mais non qu'on fais a chaque fois une instance a chaque appelle
