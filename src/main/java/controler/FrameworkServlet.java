@@ -127,6 +127,7 @@ public class FrameworkServlet extends HttpServlet {
                         out.println("<td>" + entry.getKey() + "</td>");
                         out.println("<td>" + entry.getValue().getDeclaringClass().getName() + "</td>");
                         out.println("<td>" + entry.getValue().getName() + "</td>");
+                        
                         out.println("</tr>");
                     }
                     out.println("</table>");
