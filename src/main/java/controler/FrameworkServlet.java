@@ -5,6 +5,7 @@ import annotation.UrlKey;
 import annotation.UrlMethode;
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -18,17 +19,30 @@ import java.net.URL;
 import java.util.LinkedHashMap;
 import java.util.HashMap;
 import java.util.Map;
+import util.ModelAndView;
 
 public class FrameworkServlet extends HttpServlet {
 
     private Map<UrlKey, Method> mappingUrls = new HashMap<>();
     private Map<Class<?>, Object> controllerInstances = new HashMap<>();
+    private String prefix = "";
+    private String suffix = "";
 
     @Override
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
         
         String packageToScan = config.getInitParameter("scan-package");
+        String initPrefix = config.getInitParameter("prefix");
+        String initSuffix = config.getInitParameter("suffix");
+
+        if (initPrefix != null) {
+            prefix = initPrefix;
+        }
+
+        if (initSuffix != null) {
+            suffix = initSuffix;
+        }
         
         if (packageToScan != null && !packageToScan.trim().isEmpty()) {
             try {
@@ -111,6 +125,11 @@ public class FrameworkServlet extends HttpServlet {
                 out.println("<h1>Méthode correspondante trouvée :</h1>");
                 out.println("<p>Classe : " + meth.getDeclaringClass().getName() + "</p>");
                 out.println("<p>Méthode : " + meth.getName() + " avec le type " + methode + "</p>");
+                if (result instanceof ModelAndView) {
+                    traiterModelAndView((ModelAndView) result, request, response);
+                    return;
+                }
+
                 if (result != null) {
                     out.println("<p>Résultat : " + result + "</p>");
                 }
@@ -170,6 +189,26 @@ public class FrameworkServlet extends HttpServlet {
             throw new ServletException("La méthode " + method.getName() + " doit accepter zéro paramètre ou un Map");
         } catch (IllegalAccessException | InvocationTargetException e) {
             throw new ServletException("Erreur lors de l'invocation de la méthode " + method.getName(), e);
+        }
+    }
+
+    public void traiterModelAndView(ModelAndView mv, HttpServletRequest req, HttpServletResponse res) throws ServletException {
+        if (mv == null) {
+            return;
+        }
+
+        String viewName = mv.getViewName();
+        Map<String, Object> model = mv.getModel();
+
+        for (Map.Entry<String, Object> entry : model.entrySet()) {
+            req.setAttribute(entry.getKey(), entry.getValue());
+        }
+
+        try {
+            RequestDispatcher dispatcher = req.getRequestDispatcher(prefix + viewName + suffix);
+            dispatcher.forward(req, res);
+        } catch (Exception e) {
+            throw new ServletException("Erreur lors du forwarding vers la vue", e);
         }
     }
 }
