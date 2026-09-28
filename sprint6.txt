@@ -1,0 +1,8 @@
+le controller ne dois plus tout de suite aller dans le vue mais il doit envoye un JSON (REST)
+
+manampy annotation ray
+ex: JSON, REST, etc...
+
+cote framework:
+rehefa anao anle dispatch de mila fantarina hoe misy ve le annotation
+
