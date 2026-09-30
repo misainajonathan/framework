@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Arret de Tomcat
-cd /home/jonathan/Bureau/apache-tomcat-11.0.26-src/bin
+cd /home/jonathan/Bureau/apache-tomcat-11.0.26/bin
 ./shutdown.sh
 cd -
 
@@ -11,7 +11,7 @@ SRC_DIR="src/main/java"
 WEB_DIR="src/main/webapp"
 BUILD_DIR="build"
 LIB_DIR="lib"
-TOMCAT_WEBAPPS="/home/jonathan/Bureau/apache-tomcat-11.0.26-src/webapps"
+TOMCAT_WEBAPPS="/home/jonathan/Bureau/apache-tomcat-11.0.26/webapps"
 SERVLET_API_JAR="$LIB_DIR/servlet-api.jar"
 MY_FRAMEWORK_JAR="$LIB_DIR/framework-jar.jar" # Votre JAR actuel
 
@@ -46,6 +46,6 @@ echo "Deploiement termine. Redemarrage de Tomcat..."
 echo ""
 
 # Redemarrage de Tomcat
-cd /home/jonathan/Bureau/apache-tomcat-11.0.26-src/bin
+cd /home/jonathan/Bureau/apache-tomcat-11.0.26/bin
 ./startup.sh
 cd -
