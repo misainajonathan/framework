@@ -107,72 +107,67 @@ public class FrameworkServlet extends HttpServlet {
     }
 
     private void processRequest(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        String pathInfo = request.getPathInfo();
-        String methode = request.getMethod();
+    String pathInfo = request.getPathInfo();
+    String methode = request.getMethod();
 
-        UrlKey cle = new UrlKey(pathInfo, methode);
-        Map<String, String[]> parameterMap = request.getParameterMap();
+    UrlKey cle = new UrlKey(pathInfo, methode);
+    Map<String, String[]> parameterMap = request.getParameterMap();
 
-        if (mappingUrls.containsKey(cle)) {
-            Method meth = mappingUrls.get(cle);
-            Object controller = controllerInstances.get(meth.getDeclaringClass());
-            Object result = invokeMappedMethod(meth, controller, parameterMap);
+    if (mappingUrls.containsKey(cle)) {
+        Method meth = mappingUrls.get(cle);
+        Object controller = controllerInstances.get(meth.getDeclaringClass());
+        Object result = invokeMappedMethod(meth, controller, parameterMap);
 
-            if (meth.isAnnotationPresent(RestApi.class)) {
-                response.setContentType("application/json;charset=UTF-8");
-                try (PrintWriter out = response.getWriter()) {
-                    out.write(convertirEnJson(result));
-                }
-                return;
-            }
+        if (meth.isAnnotationPresent(RestApi.class)) {
+            response.setContentType("application/json;charset=UTF-8");
+            String json = convertirEnJson(result);
+            PrintWriter out = response.getWriter();
+            out.write(json);
+            out.flush();
+            return;   
+        }
 
-            if (result instanceof ModelAndView) {
-                traiterModelAndView((ModelAndView) result, request, response);
-                return;
-            }
-
-            response.setContentType("text/html;charset=UTF-8");
-            try (PrintWriter out = response.getWriter()) {
-                out.println("<!DOCTYPE html>");
-                out.println("<html>");
-                out.println("<head><title>Framework Mapping</title></head>");
-                out.println("<body>");
-                out.println("<h1>Méthode correspondante trouvée :</h1>");
-                out.println("<p>Classe : " + meth.getDeclaringClass().getName() + "</p>");
-                out.println("<p>Méthode : " + meth.getName() + " avec le type " + methode + "</p>");
-                if (result != null) {
-                    out.println("<p>Résultat : " + result + "</p>");
-                }
-                out.println("</body>");
-                out.println("</html>");
-            }
-            return;
+        if (result instanceof ModelAndView) {
+            traiterModelAndView((ModelAndView) result, request, response);
+            return;   
         }
 
         response.setContentType("text/html;charset=UTF-8");
         try (PrintWriter out = response.getWriter()) {
             out.println("<!DOCTYPE html>");
-            out.println("<html>");
-            out.println("<head><title>Framework Mapping</title></head>");
-            out.println("<body>");
-            out.println("<h1>Aucune méthode ne correspond à l'URL : " + pathInfo + "</h1>");
-            out.println("<h2>Liste de toutes les méthodes disponibles :</h2>");
-            if (mappingUrls.isEmpty()) {
-                out.println("<p>Aucun mapping trouvé dans le package.</p>");
-            } else {
-                out.println("<table border='1'>");
-                out.println("<tr><th>URL</th><th>Classe</th><th>Méthode</th></tr>");
-                for (Map.Entry<UrlKey, Method> entry : mappingUrls.entrySet()) {
-                    out.println("<tr>");
-                    out.println("<td>" + entry.getKey() + "</td>");
-                    out.println("<td>" + entry.getValue().getDeclaringClass().getName() + "</td>");
-                    out.println("<td>" + entry.getValue().getName() + "</td>");
-                    out.println("</tr>");
-                }
-                out.println("</table>");
+            out.println("<html><head><title>Framework Mapping</title></head><body>");
+            out.println("<h1>Méthode correspondante trouvée :</h1>");
+            out.println("<p>Classe : " + meth.getDeclaringClass().getName() + "</p>");
+            out.println("<p>Méthode : " + meth.getName() + " avec le type " + methode + "</p>");
+            if (result != null) {
+                out.println("<p>Résultat : " + result + "</p>");
             }
-            out.println("</body>");
-            out.println("</html>");
+            out.println("</body></html>");
+        }
+
+        } else {
+            response.setContentType("text/html;charset=UTF-8");
+            try (PrintWriter out = response.getWriter()) {
+                out.println("<!DOCTYPE html>");
+                out.println("<html><head><title>Framework Mapping</title></head><body>");
+                out.println("<h1>Aucune méthode ne correspond à l'URL : " + pathInfo + "</h1>");
+                out.println("<h2>Liste de toutes les méthodes disponibles :</h2>");
+                if (mappingUrls.isEmpty()) {
+                    out.println("<p>Aucun mapping trouvé dans le package.</p>");
+                } else {
+                    out.println("<table border='1'>");
+                    out.println("<tr><th>URL</th><th>Classe</th><th>Méthode</th></tr>");
+                    for (Map.Entry<UrlKey, Method> entry : mappingUrls.entrySet()) {
+                        out.println("<tr>");
+                        out.println("<td>" + entry.getKey() + "</td>");
+                        out.println("<td>" + entry.getValue().getDeclaringClass().getName() + "</td>");
+                        out.println("<td>" + entry.getValue().getName() + "</td>");
+                        out.println("</tr>");
+                    }
+                    out.println("</table>");
+                }
+                out.println("</body></html>");
+            }
         }
     }
 
