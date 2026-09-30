@@ -1,13 +1,15 @@
 package controler;
 
 import annotation.Controller;
-import annotation.UrlMapping;
+import annotation.UrlMethode;
+import annotation.RestApi;
 
 @Controller
 public class Test {
     
-    @UrlMapping("/test")
-    public String test() {
-        return "test";
+    @UrlMethode(Value = "/api/test", method = HttpMethod.GET)
+    @RestApi
+    public String testJson() {
+        return "Hello JSON";
     }
 }
