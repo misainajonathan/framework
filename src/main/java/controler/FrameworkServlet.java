@@ -1,6 +1,7 @@
 package controler;
 
 import annotation.Controller;
+import annotation.RestApi;
 import annotation.UrlKey;
 import annotation.UrlMethode;
 import jakarta.servlet.ServletConfig;
@@ -31,7 +32,7 @@ public class FrameworkServlet extends HttpServlet {
     @Override
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
-        
+
         String packageToScan = config.getInitParameter("scan-package");
         String initPrefix = config.getInitParameter("prefix");
         String initSuffix = config.getInitParameter("suffix");
@@ -43,7 +44,7 @@ public class FrameworkServlet extends HttpServlet {
         if (initSuffix != null) {
             suffix = initSuffix;
         }
-        
+
         if (packageToScan != null && !packageToScan.trim().isEmpty()) {
             try {
                 scanPackages(packageToScan);
@@ -70,7 +71,7 @@ public class FrameworkServlet extends HttpServlet {
                     if (file.getName().endsWith(".class")) {
                         String className = packageName + "." + file.getName().substring(0, file.getName().length() - 6);
                         Class<?> cls = Class.forName(className);
-                        
+
                         if (cls.isAnnotationPresent(Controller.class)) {
                             Object controllerInstance = createControllerInstance(cls);
                             controllerInstances.put(cls, controllerInstance);
@@ -94,46 +95,61 @@ public class FrameworkServlet extends HttpServlet {
     }
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
         processRequest(request, response);
     }
 
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
         processRequest(request, response);
     }
 
     private void processRequest(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        response.setContentType("text/html;charset=UTF-8");
-        String pathInfo = request.getPathInfo();
-        String methode = request.getMethod();
+    String pathInfo = request.getPathInfo();
+    String methode = request.getMethod();
 
-        UrlKey cle = new UrlKey(pathInfo, methode);
-        Map<String, String[]> parameterMap = request.getParameterMap();
-        
+    UrlKey cle = new UrlKey(pathInfo, methode);
+    Map<String, String[]> parameterMap = request.getParameterMap();
+
+    if (mappingUrls.containsKey(cle)) {
+        Method meth = mappingUrls.get(cle);
+        Object controller = controllerInstances.get(meth.getDeclaringClass());
+        Object result = invokeMappedMethod(meth, controller, parameterMap);
+
+        if (meth.isAnnotationPresent(RestApi.class)) {
+            response.setContentType("application/json;charset=UTF-8");
+            String json = convertirEnJson(result);
+            PrintWriter out = response.getWriter();
+            out.write(json);
+            out.flush();
+            return;   
+        }
+
+        if (result instanceof ModelAndView) {
+            traiterModelAndView((ModelAndView) result, request, response);
+            return;   
+        }
+
+        response.setContentType("text/html;charset=UTF-8");
         try (PrintWriter out = response.getWriter()) {
             out.println("<!DOCTYPE html>");
-            out.println("<html>");
-            out.println("<head><title>Framework Mapping</title></head>");
-            out.println("<body>");
-            
-            if (mappingUrls.containsKey(cle)) {
-                Method meth = mappingUrls.get(cle);
-                Object controller = controllerInstances.get(meth.getDeclaringClass());
-                Object result = invokeMappedMethod(meth, controller, parameterMap);
+            out.println("<html><head><title>Framework Mapping</title></head><body>");
+            out.println("<h1>Méthode correspondante trouvée :</h1>");
+            out.println("<p>Classe : " + meth.getDeclaringClass().getName() + "</p>");
+            out.println("<p>Méthode : " + meth.getName() + " avec le type " + methode + "</p>");
+            if (result != null) {
+                out.println("<p>Résultat : " + result + "</p>");
+            }
+            out.println("</body></html>");
+        }
 
-                out.println("<h1>Méthode correspondante trouvée :</h1>");
-                out.println("<p>Classe : " + meth.getDeclaringClass().getName() + "</p>");
-                out.println("<p>Méthode : " + meth.getName() + " avec le type " + methode + "</p>");
-                if (result instanceof ModelAndView) {
-                    traiterModelAndView((ModelAndView) result, request, response);
-                    return;
-                }
-
-                if (result != null) {
-                    out.println("<p>Résultat : " + result + "</p>");
-                }
-            } else {
+        } else {
+            response.setContentType("text/html;charset=UTF-8");
+            try (PrintWriter out = response.getWriter()) {
+                out.println("<!DOCTYPE html>");
+                out.println("<html><head><title>Framework Mapping</title></head><body>");
                 out.println("<h1>Aucune méthode ne correspond à l'URL : " + pathInfo + "</h1>");
                 out.println("<h2>Liste de toutes les méthodes disponibles :</h2>");
                 if (mappingUrls.isEmpty()) {
@@ -146,15 +162,12 @@ public class FrameworkServlet extends HttpServlet {
                         out.println("<td>" + entry.getKey() + "</td>");
                         out.println("<td>" + entry.getValue().getDeclaringClass().getName() + "</td>");
                         out.println("<td>" + entry.getValue().getName() + "</td>");
-                        
                         out.println("</tr>");
                     }
                     out.println("</table>");
                 }
+                out.println("</body></html>");
             }
-            
-            out.println("</body>");
-            out.println("</html>");
         }
     }
 
@@ -163,8 +176,8 @@ public class FrameworkServlet extends HttpServlet {
             Constructor<?> constructor = controllerClass.getDeclaredConstructor();
             constructor.setAccessible(true);
             return constructor.newInstance();
-        } catch (NoSuchMethodException | InstantiationException | IllegalAccessException |
-                 InvocationTargetException e) {
+        } catch (NoSuchMethodException | InstantiationException | IllegalAccessException
+                | InvocationTargetException e) {
             throw new ServletException("Impossible d'instancier le contrôleur : " + controllerClass.getName(), e);
         }
     }
@@ -192,7 +205,13 @@ public class FrameworkServlet extends HttpServlet {
         }
     }
 
-    public void traiterModelAndView(ModelAndView mv, HttpServletRequest req, HttpServletResponse res) throws ServletException {
+    private String convertirEnJson(Object result) {
+        com.google.gson.Gson gson = new com.google.gson.Gson();
+        return gson.toJson(result);
+    }
+
+    public void traiterModelAndView(ModelAndView mv, HttpServletRequest req, HttpServletResponse res)
+            throws ServletException {
         if (mv == null) {
             return;
         }

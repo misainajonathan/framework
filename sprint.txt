@@ -1,0 +1,10 @@
+binding
+    -jerena hoe misy parametre ve ilay ao amin'ny URL, raha misy dia alaina ny valeur-ny ary alefa any amin'ny method
+    -manao matching ny URL sy ny method, raha misy dia alefa any amin'ny method ilay request
+    -par defaut izy null(parametre)
+
+methode simple:
+    -fantarina fotsiny ny type anle parametre de atao mitovy amin'iny ilay izy rehefa invokena (matching)
+
+methode complexe:
+    -atao object 
