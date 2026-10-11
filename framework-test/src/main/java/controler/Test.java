@@ -13,5 +13,10 @@ public class Test {
     public String testJson(){
         return "Hello JSON";
     }
-    
+
+    @UrlMethode(Value = "/essai", method = HttpMethod.GET)
+    public String essai(String param1, String param2){
+        return "Param1: " + param1 + ", Param2: " + param2;
+    }
+
 }
