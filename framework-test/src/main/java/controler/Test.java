@@ -19,4 +19,12 @@ public class Test {
         return "Param1: " + param1 + ", Param2: " + param2;
     }
 
+    @UrlMethode(Value = "/testobjet", method = HttpMethod.GET)
+    public String testerBindingEmploye(Employe employe) {
+        if (employe != null) {
+            return "Objet reçu avec succès : " + employe.toString();
+        }
+        return "L'objet est null";
+    }
+
 }
