@@ -123,19 +123,24 @@ public class FrameworkServlet extends HttpServlet {
 
             for (int i = 0; i < parameters.length; i++) {
                 Parameter param = parameters[i];
-                String parametreName = param.getName(); // Le nom de la variable dans la méthode
-                
-                if (parameterMap.containsKey(parametreName)) {
-                    String[] valeurs = parameterMap.get(parametreName);
-                    if (valeurs != null && valeurs.length > 0) {
-                        String valeurBrute = valeurs[0];
-                        
-                        args[i] = convertirParametre(valeurBrute, param.getType());
+                Class<?> paramType = param.getType();
+                String parametreName = param.getName(); // Nom de la variable (ou argument)
+
+                if (isTypeSimple(paramType)) {
+                    if (parameterMap.containsKey(parametreName)) {
+                        String[] valeurs = parameterMap.get(parametreName);
+                        if (valeurs != null && valeurs.length > 0) {
+                            args[i] = convertirParametre(valeurs[0], paramType);
+                        } else {
+                            args[i] = null;
+                        }
                     } else {
                         args[i] = null;
                     }
-                } else {
-                    args[i] = null;
+                } 
+                else {
+                    Object objetComplexe = instancierEtRemplirObjet(paramType, parameterMap);
+                    args[i] = objetComplexe;
                 }
             }
 
@@ -296,5 +301,38 @@ public class FrameworkServlet extends HttpServlet {
         } else {
             throw new Exception("Conversion non supportée pour le type : " + paramType.getName());
         }
+    }
+
+    private boolean isTypeSimple(Class<?> type) {
+        return type == String.class ||
+               type == int.class || type == Integer.class ||
+               type == long.class || type == Long.class ||
+               type == double.class || type == Double.class ||
+               type == boolean.class || type == Boolean.class;
+    }
+
+    private Object instancierEtRemplirObjet(Class<?> clazz, Map<String, String[]> parameterMap) throws Exception {
+        Constructor<?> constructor = clazz.getDeclaredConstructor();
+        constructor.setAccessible(true);
+        Object instance = constructor.newInstance();
+
+        java.lang.reflect.Field[] fields = clazz.getDeclaredFields();
+        for (java.lang.reflect.Field field : fields) {
+            field.setAccessible(true);
+            String fieldName = field.getName(); // ex: "nom", "age"
+
+            if (parameterMap.containsKey(fieldName)) {
+                String[] valeurs = parameterMap.get(fieldName);
+                if (valeurs != null && valeurs.length > 0) {
+                    String valeurBrute = valeurs[0];
+                    
+                    Object valeurConvertie = convertirParametre(valeurBrute, field.getType());
+                    
+                    field.set(instance, valeurConvertie);
+                }
+            }
+        }
+
+        return instance;
     }
 }
