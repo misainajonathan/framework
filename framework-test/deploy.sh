@@ -25,7 +25,7 @@ cp -f $MY_FRAMEWORK_JAR $BUILD_DIR/WEB-INF/lib/
 
 # Compilation des fichiers Java (Test.java, Main.java) en incluant votre JAR
 find $SRC_DIR -name "*.java" > sources.txt
-javac -cp "$SERVLET_API_JAR:$MY_FRAMEWORK_JAR" -d $BUILD_DIR/WEB-INF/classes @sources.txt
+javac -parameters -cp "$SERVLET_API_JAR:$MY_FRAMEWORK_JAR" -d $BUILD_DIR/WEB-INF/classes @sources.txt
 rm sources.txt
 
 # Copier les fichiers web (web.xml)
