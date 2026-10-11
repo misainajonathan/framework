@@ -1,0 +1,6 @@
+Objectif : Binding
+- Traiter les donnees envoyees depuis le view 
+- Verifier si la methode a des parametres 
+- la methode d'action appelee dans le controlleur peut avoir des arguments
+- mettre des nulls par tout
+- chercher parmis les requestparameters ce qui match et on remplace les valeurs null;

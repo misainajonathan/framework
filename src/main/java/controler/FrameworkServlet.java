@@ -16,6 +16,7 @@ import java.io.PrintWriter;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.net.URL;
 import java.util.LinkedHashMap;
 import java.util.HashMap;
@@ -112,11 +113,38 @@ public class FrameworkServlet extends HttpServlet {
 
     UrlKey cle = new UrlKey(pathInfo, methode);
     Map<String, String[]> parameterMap = request.getParameterMap();
-
+    Object[] args = null;
+    
     if (mappingUrls.containsKey(cle)) {
         Method meth = mappingUrls.get(cle);
+        try {
+            Parameter[] parameters = meth.getParameters();
+            args = new Object[parameters.length]; // Initialisé avec des null partout
+
+            for (int i = 0; i < parameters.length; i++) {
+                Parameter param = parameters[i];
+                String parametreName = param.getName(); // Le nom de la variable dans la méthode
+                
+                if (parameterMap.containsKey(parametreName)) {
+                    String[] valeurs = parameterMap.get(parametreName);
+                    if (valeurs != null && valeurs.length > 0) {
+                        String valeurBrute = valeurs[0];
+                        
+                        args[i] = convertirParametre(valeurBrute, param.getType());
+                    } else {
+                        args[i] = null;
+                    }
+                } else {
+                    args[i] = null;
+                }
+            }
+
+        } catch (Exception e) {
+            throw new ServletException("Erreur lors du binding des paramètres pour la méthode " + meth.getName(), e);
+        }
+        
         Object controller = controllerInstances.get(meth.getDeclaringClass());
-        Object result = invokeMappedMethod(meth, controller, parameterMap);
+        Object result = invokeMappedMethodDynamique(meth, controller, args);
 
         if (meth.isAnnotationPresent(RestApi.class)) {
             response.setContentType("application/json;charset=UTF-8");
@@ -182,6 +210,16 @@ public class FrameworkServlet extends HttpServlet {
         }
     }
 
+    private Object invokeMappedMethodDynamique(Method method, Object controller, Object[] args)
+            throws ServletException {
+        try {
+            method.setAccessible(true);
+            return method.invoke(controller, args);
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            throw new ServletException("Erreur lors de l'invocation de la méthode " + method.getName(), e);
+        }
+    }
+
     private Object invokeMappedMethod(Method method, Object controller, Map<String, String[]> requestParameters)
             throws ServletException {
         try {
@@ -228,6 +266,35 @@ public class FrameworkServlet extends HttpServlet {
             dispatcher.forward(req, res);
         } catch (Exception e) {
             throw new ServletException("Erreur lors du forwarding vers la vue", e);
+        }
+    }
+
+
+    public Map<String, Parameter> getMethodParameters(Method method) throws Exception {
+        Map<String, Parameter> methodParameters = new HashMap<>();
+        Parameter[] parameters = method.getParameters();
+        for (Parameter parameter : parameters){
+            String paramName = parameter.getName();
+            Class<?> paramType = parameter.getType();
+            System.out.println("Paramètre : " + paramName + ", Type : " + paramType.getName());
+            methodParameters.put(paramName, parameter);
+        }
+        return methodParameters;
+    }
+
+    public Object convertirParametre(String paramValue, Class<?> paramType) throws Exception {
+        if (paramType == String.class) {
+            return paramValue;
+        } else if (paramType == int.class || paramType == Integer.class) {
+            return Integer.parseInt(paramValue);
+        } else if (paramType == long.class || paramType == Long.class) {
+            return Long.parseLong(paramValue);
+        } else if (paramType == double.class || paramType == Double.class) {
+            return Double.parseDouble(paramValue);
+        } else if (paramType == boolean.class || paramType == Boolean.class) {
+            return Boolean.parseBoolean(paramValue);
+        } else {
+            throw new Exception("Conversion non supportée pour le type : " + paramType.getName());
         }
     }
 }
