@@ -135,6 +135,40 @@ public class FrameworkServlet extends HttpServlet {
                     Class<?> paramType = param.getType();
                     String parametreName = param.getName(); // Nom de la variable (ou argument)
 
+                    if (paramType == Part.class) {
+                        Map<String, Parameter> params = null;
+                        try {
+                            params = getMethodParameters(meth);
+                            if (params == null) {
+                                throw new ServletException("Aucun paramètre trouvé pour la méthode " + meth.getName());
+                            }
+
+                            Part filePart = request.getPart("file");
+                            if (filePart == null) {
+                                throw new ServletException("Aucun fichier uploadé pour la méthode " + meth.getName());
+                            }
+
+                            String fileName = Paths.get(filePart.getSubmittedFileName()).getFileName().toString();
+                            String destination = getProperties("src/main/resources/application.properties")
+                                    .getProperty("upload.directory");
+                            if (destination == null || destination.trim().isEmpty()) {
+                                throw new ServletException(
+                                        "Le répertoire de destination pour l'upload n'est pas défini dans application.properties");
+                            }
+                            File uploadDir = new File(destination);
+                            if (!uploadDir.exists()) {
+                                uploadDir.mkdirs();
+                            }
+                            String filePath = destination + File.separator + fileName;
+                            filePart.write(filePath);
+
+                        } catch (Exception e) {
+                            throw new ServletException("Erreur lors de l'upload du fichier pour la méthode " + meth.getName(),
+                                    e);
+                        }
+
+                    }
+
                     if (isTypeSimple(paramType)) {
                         if (parameterMap.containsKey(parametreName)) {
                             String[] valeurs = parameterMap.get(parametreName);
@@ -158,39 +192,6 @@ public class FrameworkServlet extends HttpServlet {
             }
 
             Object controller = controllerInstances.get(meth.getDeclaringClass());
-            if (cle.getUrl().contains("file")) {
-                Map<String, Parameter> params = null;
-                try {
-                    params = getMethodParameters(meth);
-                    if (params == null) {
-                        throw new ServletException("Aucun paramètre trouvé pour la méthode " + meth.getName());
-                    }
-
-                    Part filePart = request.getPart("file");
-                    if (filePart == null) {
-                        throw new ServletException("Aucun fichier uploadé pour la méthode " + meth.getName());
-                    }
-
-                    String fileName = Paths.get(filePart.getSubmittedFileName()).getFileName().toString();
-                    String destination = getProperties("src/main/resources/application.properties")
-                            .getProperty("upload.directory");
-                    if (destination == null || destination.trim().isEmpty()) {
-                        throw new ServletException(
-                                "Le répertoire de destination pour l'upload n'est pas défini dans application.properties");
-                    }
-                    File uploadDir = new File(destination);
-                    if (!uploadDir.exists()) {
-                        uploadDir.mkdirs();
-                    }
-                    String filePath = destination + File.separator + fileName;
-                    filePart.write(filePath);
-
-                } catch (Exception e) {
-                    throw new ServletException("Erreur lors de l'upload du fichier pour la méthode " + meth.getName(),
-                            e);
-                }
-
-            }
 
             Object result = invokeMappedMethodDynamique(meth, controller, args);
 
