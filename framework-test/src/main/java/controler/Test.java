@@ -2,6 +2,7 @@ package controler;
 
 import annotation.Controller;
 import annotation.UrlMethode;
+import jakarta.servlet.http.Part;
 import annotation.RestApi;
 import annotation.HttpMethod;
 
@@ -25,6 +26,16 @@ public class Test {
             return "Objet reçu avec succès : " + employe.toString();
         }
         return "L'objet est null";
+    }
+
+    @UrlMethode(Value = "/file", method = HttpMethod.POST)
+    public String upload(Part file) {
+        // Logique de traitement du fichier
+        if (file==null) {
+            throw new IllegalArgumentException("Le fichier ne peut pas être null");
+        }
+
+        return "Fichier reçu : " + file;
     }
 
 }
