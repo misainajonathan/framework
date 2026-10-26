@@ -27,7 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-import util.ModelAndView;
+import util.*;
 
 @MultipartConfig 
 public class FrameworkServlet extends HttpServlet {
@@ -36,6 +36,7 @@ public class FrameworkServlet extends HttpServlet {
     private Map<Class<?>, Object> controllerInstances = new HashMap<>();
     private String prefix = "";
     private String suffix = "";
+    private String htmlupload = Upload.getHtmlUpload();
 
     @Override
     public void init(ServletConfig config) throws ServletException {
@@ -156,17 +157,6 @@ public class FrameworkServlet extends HttpServlet {
         }
         
         Object controller = controllerInstances.get(meth.getDeclaringClass());
-        Object result = invokeMappedMethodDynamique(meth, controller, args);
-
-        if (meth.isAnnotationPresent(RestApi.class)) {
-            response.setContentType("application/json;charset=UTF-8");
-            String json = convertirEnJson(result);
-            PrintWriter out = response.getWriter();
-            out.write(json);
-            out.flush();
-            return;   
-        }
-
         if (cle.getUrl().contains("file")) {
             Map<String, Parameter> params = null;
             try {
@@ -197,6 +187,18 @@ public class FrameworkServlet extends HttpServlet {
             }
 
         }
+
+        Object result = invokeMappedMethodDynamique(meth, controller, args);
+
+        if (meth.isAnnotationPresent(RestApi.class)) {
+            response.setContentType("application/json;charset=UTF-8");
+            String json = convertirEnJson(result);
+            PrintWriter out = response.getWriter();
+            out.write(json);
+            out.flush();
+            return;   
+        }
+
 
         if (result instanceof ModelAndView) {
             traiterModelAndView((ModelAndView) result, request, response);
@@ -236,6 +238,7 @@ public class FrameworkServlet extends HttpServlet {
                         out.println("</tr>");
                     }
                     out.println("</table>");
+                    out.println(htmlupload);
                 }
                 out.println("</body></html>");
             }
@@ -376,7 +379,7 @@ public class FrameworkServlet extends HttpServlet {
 
     public Properties getProperties(String filePath) throws IOException {
         Properties properties = new Properties();
-        try (java.io.InputStream input = new java.io.FileInputStream(filePath)) {
+        try (java.io.InputStream input = getServletContext().getResourceAsStream(filePath)) {
             properties.load(input);
         }
         return properties;
