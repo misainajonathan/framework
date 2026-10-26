@@ -1,0 +1,2 @@
+-le client fait une upload de fichier 
+-le client fait dans une application properties la directory qu'il veut utiliser pour stocker les fichiers uploadés
