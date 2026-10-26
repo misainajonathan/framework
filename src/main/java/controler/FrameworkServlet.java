@@ -29,7 +29,7 @@ import java.util.Properties;
 
 import util.*;
 
-@MultipartConfig 
+@MultipartConfig
 public class FrameworkServlet extends HttpServlet {
 
     private Map<UrlKey, Method> mappingUrls = new HashMap<>();
@@ -115,108 +115,111 @@ public class FrameworkServlet extends HttpServlet {
         processRequest(request, response);
     }
 
-    private void processRequest(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-    String pathInfo = request.getPathInfo();
-    String methode = request.getMethod();
+    private void processRequest(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        String pathInfo = request.getPathInfo();
+        String methode = request.getMethod();
 
-    UrlKey cle = new UrlKey(pathInfo, methode);
-    Map<String, String[]> parameterMap = request.getParameterMap();
-    Object[] args = null;
-    
-    if (mappingUrls.containsKey(cle)) {
-        Method meth = mappingUrls.get(cle);
-        try {
-            Parameter[] parameters = meth.getParameters();
-            args = new Object[parameters.length]; // Initialisé avec des null partout
+        UrlKey cle = new UrlKey(pathInfo, methode);
+        Map<String, String[]> parameterMap = request.getParameterMap();
+        Object[] args = null;
 
-            for (int i = 0; i < parameters.length; i++) {
-                Parameter param = parameters[i];
-                Class<?> paramType = param.getType();
-                String parametreName = param.getName(); // Nom de la variable (ou argument)
+        if (mappingUrls.containsKey(cle)) {
+            Method meth = mappingUrls.get(cle);
+            try {
+                Parameter[] parameters = meth.getParameters();
+                args = new Object[parameters.length]; // Initialisé avec des null partout
 
-                if (isTypeSimple(paramType)) {
-                    if (parameterMap.containsKey(parametreName)) {
-                        String[] valeurs = parameterMap.get(parametreName);
-                        if (valeurs != null && valeurs.length > 0) {
-                            args[i] = convertirParametre(valeurs[0], paramType);
+                for (int i = 0; i < parameters.length; i++) {
+                    Parameter param = parameters[i];
+                    Class<?> paramType = param.getType();
+                    String parametreName = param.getName(); // Nom de la variable (ou argument)
+
+                    if (isTypeSimple(paramType)) {
+                        if (parameterMap.containsKey(parametreName)) {
+                            String[] valeurs = parameterMap.get(parametreName);
+                            if (valeurs != null && valeurs.length > 0) {
+                                args[i] = convertirParametre(valeurs[0], paramType);
+                            } else {
+                                args[i] = null;
+                            }
                         } else {
                             args[i] = null;
                         }
                     } else {
-                        args[i] = null;
+                        Object objetComplexe = instancierEtRemplirObjet(paramType, parameterMap);
+                        args[i] = objetComplexe;
                     }
-                } 
-                else {
-                    Object objetComplexe = instancierEtRemplirObjet(paramType, parameterMap);
-                    args[i] = objetComplexe;
                 }
-            }
-
-        } catch (Exception e) {
-            throw new ServletException("Erreur lors du binding des paramètres pour la méthode " + meth.getName(), e);
-        }
-        
-        Object controller = controllerInstances.get(meth.getDeclaringClass());
-        if (cle.getUrl().contains("file")) {
-            Map<String, Parameter> params = null;
-            try {
-                params = getMethodParameters(meth);
-                if (params==null) {
-                    throw new ServletException("Aucun paramètre trouvé pour la méthode " + meth.getName());
-                }
-
-                Part filePart = request.getPart("file");
-                if (filePart == null) {
-                    throw new ServletException("Aucun fichier uploadé pour la méthode " + meth.getName());
-                }
-
-                String fileName = Paths.get(filePart.getSubmittedFileName()).getFileName().toString();
-                String destination = getProperties("src/main/resources/application.properties").getProperty("upload.directory");
-                if (destination == null || destination.trim().isEmpty()) {
-                    throw new ServletException("Le répertoire de destination pour l'upload n'est pas défini dans application.properties");
-                }
-                File uploadDir = new File(destination);
-                if (!uploadDir.exists()) {
-                    uploadDir.mkdirs();
-                }
-                String filePath = destination + File.separator + fileName;
-                filePart.write(filePath);
 
             } catch (Exception e) {
-                throw new ServletException("Erreur lors de l'upload du fichier pour la méthode " + meth.getName(), e);
+                throw new ServletException("Erreur lors du binding des paramètres pour la méthode " + meth.getName(),
+                        e);
             }
 
-        }
+            Object controller = controllerInstances.get(meth.getDeclaringClass());
+            if (cle.getUrl().contains("file")) {
+                Map<String, Parameter> params = null;
+                try {
+                    params = getMethodParameters(meth);
+                    if (params == null) {
+                        throw new ServletException("Aucun paramètre trouvé pour la méthode " + meth.getName());
+                    }
 
-        Object result = invokeMappedMethodDynamique(meth, controller, args);
+                    Part filePart = request.getPart("file");
+                    if (filePart == null) {
+                        throw new ServletException("Aucun fichier uploadé pour la méthode " + meth.getName());
+                    }
 
-        if (meth.isAnnotationPresent(RestApi.class)) {
-            response.setContentType("application/json;charset=UTF-8");
-            String json = convertirEnJson(result);
-            PrintWriter out = response.getWriter();
-            out.write(json);
-            out.flush();
-            return;   
-        }
+                    String fileName = Paths.get(filePart.getSubmittedFileName()).getFileName().toString();
+                    String destination = getProperties("src/main/resources/application.properties")
+                            .getProperty("upload.directory");
+                    if (destination == null || destination.trim().isEmpty()) {
+                        throw new ServletException(
+                                "Le répertoire de destination pour l'upload n'est pas défini dans application.properties");
+                    }
+                    File uploadDir = new File(destination);
+                    if (!uploadDir.exists()) {
+                        uploadDir.mkdirs();
+                    }
+                    String filePath = destination + File.separator + fileName;
+                    filePart.write(filePath);
 
+                } catch (Exception e) {
+                    throw new ServletException("Erreur lors de l'upload du fichier pour la méthode " + meth.getName(),
+                            e);
+                }
 
-        if (result instanceof ModelAndView) {
-            traiterModelAndView((ModelAndView) result, request, response);
-            return;   
-        }
-
-        response.setContentType("text/html;charset=UTF-8");
-        try (PrintWriter out = response.getWriter()) {
-            out.println("<!DOCTYPE html>");
-            out.println("<html><head><title>Framework Mapping</title></head><body>");
-            out.println("<h1>Méthode correspondante trouvée :</h1>");
-            out.println("<p>Classe : " + meth.getDeclaringClass().getName() + "</p>");
-            out.println("<p>Méthode : " + meth.getName() + " avec le type " + methode + "</p>");
-            if (result != null) {
-                out.println("<p>Résultat : " + result + "</p>");
             }
-            out.println("</body></html>");
-        }
+
+            Object result = invokeMappedMethodDynamique(meth, controller, args);
+
+            if (meth.isAnnotationPresent(RestApi.class)) {
+                response.setContentType("application/json;charset=UTF-8");
+                String json = convertirEnJson(result);
+                PrintWriter out = response.getWriter();
+                out.write(json);
+                out.flush();
+                return;
+            }
+
+            if (result instanceof ModelAndView) {
+                traiterModelAndView((ModelAndView) result, request, response);
+                return;
+            }
+
+            response.setContentType("text/html;charset=UTF-8");
+            try (PrintWriter out = response.getWriter()) {
+                out.println("<!DOCTYPE html>");
+                out.println("<html><head><title>Framework Mapping</title></head><body>");
+                out.println("<h1>Méthode correspondante trouvée :</h1>");
+                out.println("<p>Classe : " + meth.getDeclaringClass().getName() + "</p>");
+                out.println("<p>Méthode : " + meth.getName() + " avec le type " + methode + "</p>");
+                if (result != null) {
+                    out.println("<p>Résultat : " + result + "</p>");
+                }
+                out.println("</body></html>");
+            }
 
         } else {
             response.setContentType("text/html;charset=UTF-8");
@@ -315,11 +318,10 @@ public class FrameworkServlet extends HttpServlet {
         }
     }
 
-
     public Map<String, Parameter> getMethodParameters(Method method) throws Exception {
         Map<String, Parameter> methodParameters = new HashMap<>();
         Parameter[] parameters = method.getParameters();
-        for (Parameter parameter : parameters){
+        for (Parameter parameter : parameters) {
             String paramName = parameter.getName();
             Class<?> paramType = parameter.getType();
             System.out.println("Paramètre : " + paramName + ", Type : " + paramType.getName());
@@ -346,10 +348,10 @@ public class FrameworkServlet extends HttpServlet {
 
     private boolean isTypeSimple(Class<?> type) {
         return type == String.class ||
-               type == int.class || type == Integer.class ||
-               type == long.class || type == Long.class ||
-               type == double.class || type == Double.class ||
-               type == boolean.class || type == Boolean.class;
+                type == int.class || type == Integer.class ||
+                type == long.class || type == Long.class ||
+                type == double.class || type == Double.class ||
+                type == boolean.class || type == Boolean.class;
     }
 
     private Object instancierEtRemplirObjet(Class<?> clazz, Map<String, String[]> parameterMap) throws Exception {
@@ -366,9 +368,9 @@ public class FrameworkServlet extends HttpServlet {
                 String[] valeurs = parameterMap.get(fieldName);
                 if (valeurs != null && valeurs.length > 0) {
                     String valeurBrute = valeurs[0];
-                    
+
                     Object valeurConvertie = convertirParametre(valeurBrute, field.getType());
-                    
+
                     field.set(instance, valeurConvertie);
                 }
             }
