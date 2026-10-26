@@ -6,10 +6,13 @@ import annotation.UrlKey;
 import annotation.UrlMethode;
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.Part;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -18,11 +21,15 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.net.URL;
+import java.nio.file.Paths;
 import java.util.LinkedHashMap;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
+
 import util.ModelAndView;
 
+@MultipartConfig 
 public class FrameworkServlet extends HttpServlet {
 
     private Map<UrlKey, Method> mappingUrls = new HashMap<>();
@@ -158,6 +165,37 @@ public class FrameworkServlet extends HttpServlet {
             out.write(json);
             out.flush();
             return;   
+        }
+
+        if (cle.getUrl().contains("file")) {
+            Map<String, Parameter> params = null;
+            try {
+                params = getMethodParameters(meth);
+                if (params==null) {
+                    throw new ServletException("Aucun paramètre trouvé pour la méthode " + meth.getName());
+                }
+
+                Part filePart = request.getPart("file");
+                if (filePart == null) {
+                    throw new ServletException("Aucun fichier uploadé pour la méthode " + meth.getName());
+                }
+
+                String fileName = Paths.get(filePart.getSubmittedFileName()).getFileName().toString();
+                String destination = getProperties("src/main/resources/application.properties").getProperty("upload.directory");
+                if (destination == null || destination.trim().isEmpty()) {
+                    throw new ServletException("Le répertoire de destination pour l'upload n'est pas défini dans application.properties");
+                }
+                File uploadDir = new File(destination);
+                if (!uploadDir.exists()) {
+                    uploadDir.mkdirs();
+                }
+                String filePath = destination + File.separator + fileName;
+                filePart.write(filePath);
+
+            } catch (Exception e) {
+                throw new ServletException("Erreur lors de l'upload du fichier pour la méthode " + meth.getName(), e);
+            }
+
         }
 
         if (result instanceof ModelAndView) {
@@ -334,5 +372,13 @@ public class FrameworkServlet extends HttpServlet {
         }
 
         return instance;
+    }
+
+    public Properties getProperties(String filePath) throws IOException {
+        Properties properties = new Properties();
+        try (java.io.InputStream input = new java.io.FileInputStream(filePath)) {
+            properties.load(input);
+        }
+        return properties;
     }
 }
