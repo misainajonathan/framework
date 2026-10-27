@@ -136,40 +136,36 @@ public class FrameworkServlet extends HttpServlet {
                     String parametreName = param.getName(); // Nom de la variable (ou argument)
 
                     if (paramType == Part.class) {
-                        Map<String, Parameter> params = null;
                         try {
-                            params = getMethodParameters(meth);
-                            if (params == null) {
-                                throw new ServletException("Aucun paramètre trouvé pour la méthode " + meth.getName());
+                            // Utiliser le nom de la variable (parametreName) au lieu de "file" en dur
+                            Part filePart = request.getPart(parametreName);
+                            if (filePart != null && filePart.getSize() > 0) {
+                                String fileName = Paths.get(filePart.getSubmittedFileName()).getFileName().toString();
+                                String destination = getProperties("/WEB-INF/application.properties")
+                                        .getProperty("upload.directory");
+                                if (destination == null || destination.trim().isEmpty()) {
+                                    throw new ServletException(
+                                            "Le répertoire de destination pour l'upload n'est pas défini dans application.properties");
+                                }
+                                File uploadDir = new File(destination);
+                                if (!uploadDir.exists()) {
+                                    uploadDir.mkdirs();
+                                }
+                                String filePath = destination + File.separator + fileName;
+                                filePart.write(filePath);
+                                
+                                // INDISPENSABLE : injecter l'objet Part dans les arguments de la méthode
+                                args[i] = filePart;
+                            } else {
+                                args[i] = null;
                             }
-
-                            Part filePart = request.getPart("file");
-                            if (filePart == null) {
-                                throw new ServletException("Aucun fichier uploadé pour la méthode " + meth.getName());
-                            }
-
-                            String fileName = Paths.get(filePart.getSubmittedFileName()).getFileName().toString();
-                            String destination = getProperties("src/main/resources/application.properties")
-                                    .getProperty("upload.directory");
-                            if (destination == null || destination.trim().isEmpty()) {
-                                throw new ServletException(
-                                        "Le répertoire de destination pour l'upload n'est pas défini dans application.properties");
-                            }
-                            File uploadDir = new File(destination);
-                            if (!uploadDir.exists()) {
-                                uploadDir.mkdirs();
-                            }
-                            String filePath = destination + File.separator + fileName;
-                            filePart.write(filePath);
 
                         } catch (Exception e) {
-                            throw new ServletException("Erreur lors de l'upload du fichier pour la méthode " + meth.getName(),
-                                    e);
+                            throw new ServletException("Erreur lors de l'upload du fichier pour le paramètre " + parametreName, e);
                         }
-
                     }
 
-                    if (isTypeSimple(paramType)) {
+                    else if (isTypeSimple(paramType)) {
                         if (parameterMap.containsKey(parametreName)) {
                             String[] valeurs = parameterMap.get(parametreName);
                             if (valeurs != null && valeurs.length > 0) {
