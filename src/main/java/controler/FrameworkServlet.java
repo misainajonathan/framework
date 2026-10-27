@@ -141,7 +141,7 @@ public class FrameworkServlet extends HttpServlet {
                             Part filePart = request.getPart(parametreName);
                             if (filePart != null && filePart.getSize() > 0) {
                                 String fileName = Paths.get(filePart.getSubmittedFileName()).getFileName().toString();
-                                String destination = getProperties("/WEB-INF/application.properties")
+                                String destination = getProperties("application.properties")
                                         .getProperty("upload.directory");
                                 if (destination == null || destination.trim().isEmpty()) {
                                     throw new ServletException(
