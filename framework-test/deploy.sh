@@ -9,6 +9,7 @@ cd -
 APP_NAME="framework"
 SRC_DIR="src/main/java"
 WEB_DIR="src/main/webapp"
+RESOURCES_DIR="src/main/ressources"
 BUILD_DIR="build"
 LIB_DIR="lib"
 TOMCAT_WEBAPPS="/home/jonathan/Bureau/apache-tomcat-11.0.26/webapps"
@@ -30,6 +31,11 @@ rm sources.txt
 
 # Copier les fichiers web (web.xml)
 cp -r $WEB_DIR/* $BUILD_DIR/
+
+# Copier les fichiers de ressources (comme application.properties) directement dans WEB-INF/classes
+if [ -d "$RESOURCES_DIR" ]; then
+    cp -r $RESOURCES_DIR/* $BUILD_DIR/WEB-INF/classes/
+fi
 
 # Generer le fichier .war
 cd $BUILD_DIR || exit
