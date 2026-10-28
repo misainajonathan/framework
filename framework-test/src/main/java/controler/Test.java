@@ -38,4 +38,15 @@ public class Test {
         return "Fichier reçu : " + file;
     }
 
+    @UrlMethode(Value = "/session/set", method = HttpMethod.GET)
+    public String setSession(MySession session, String nom) {
+        session.put("nom", nom);
+        return "Nom enregistré : " + nom;
+    }
+
+    @UrlMethode(Value = "/session/get", method = HttpMethod.GET)
+    public String getSession(MySession session) {
+        return "Nom en session : " + session.get("nom") + " (id = " + session.getSessionId() + ")";
+    }
+
 }
