@@ -165,6 +165,10 @@ public class FrameworkServlet extends HttpServlet {
                         }
                     }
 
+                    else if (paramType == MySession.class) {
+                        args[i] = new MySession(request.getSession(true));
+                    }
+
                     else if (isTypeSimple(paramType)) {
                         if (parameterMap.containsKey(parametreName)) {
                             String[] valeurs = parameterMap.get(parametreName);
