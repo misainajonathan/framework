@@ -378,10 +378,10 @@ public class FrameworkServlet extends HttpServlet {
 
     public Properties getProperties(String filePath) throws IOException {
         Properties properties = new Properties();
-        String path = filePath.startsWith("/") ? filePath : "/" + filePath;
+        String path = "/WEB-INF/classes/" + filePath;
         try (java.io.InputStream input = getServletContext().getResourceAsStream(path)) {
             if (input == null) {
-                throw new IOException("Fichier " + filePath + " introuvable via getServletContext().");
+                throw new IOException("Fichier " + path + " introuvable via getServletContext().");
             }
             properties.load(input);
         }
