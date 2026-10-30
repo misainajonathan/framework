@@ -6,6 +6,7 @@ import jakarta.servlet.http.Part;
 import annotation.RestApi;
 import annotation.HttpMethod;
 import util.MySession;
+import annotation.Auth;
 
 @Controller
 public class Test {
@@ -48,6 +49,24 @@ public class Test {
     @UrlMethode(Value = "/session/get", method = HttpMethod.GET)
     public String getSession(MySession session) {
         return "Nom en session : " + session.get("nom") + " (id = " + session.getSessionId() + ")";
+    }
+
+    @UrlMethode(Value = "/login", method = HttpMethod.GET)
+    public String login(MySession session, String role) {
+        session.put("role", role);
+        return "Connecté avec le rôle : " + role;
+    }
+
+    @UrlMethode(Value = "/logout", method = HttpMethod.GET)
+    public String logout(MySession session) {
+        session.invalidate();
+        return "Déconnecté";
+    }
+
+    @Auth
+    @UrlMethode(Value = "/profil", method = HttpMethod.GET)
+    public String profil(MySession session) {
+        return "Profil, rôle : " + session.get("role");
     }
 
 }
