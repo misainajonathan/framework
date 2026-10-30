@@ -1,5 +1,6 @@
 package controler;
 
+import annotation.Auth;
 import annotation.Controller;
 import annotation.RestApi;
 import annotation.UrlKey;
@@ -11,6 +12,7 @@ import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.Part;
 
 import java.io.File;
@@ -127,6 +129,34 @@ public class FrameworkServlet extends HttpServlet {
         if (mappingUrls.containsKey(cle)) {
             Method meth = mappingUrls.get(cle);
             try {
+                Auth auth = meth.getAnnotation(Auth.class);
+                if (auth == null) {
+                    auth = meth.getDeclaringClass().getAnnotation(Auth.class);
+                }
+
+                if (auth != null) {
+                    HttpSession httpSession = request.getSession(false);
+                    if (httpSession == null) {
+                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Authentification requise");
+                        return;
+                    }
+
+                    MySession session = new MySession(httpSession);
+                    // Object roleSession = session.get("role");
+
+                    // if (roleSession == null) {
+                    //     response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Authentification requise");
+                    //     return;
+                    // }
+
+                    // String roleRequis = auth.role();
+                    // if (!roleRequis.isEmpty() && !roleRequis.equals(roleSession.toString())) {
+                    //     response.sendError(HttpServletResponse.SC_FORBIDDEN, "Role insuffisant");
+                    //     return;
+                    // }
+                }
+
+
                 Parameter[] parameters = meth.getParameters();
                 args = new Object[parameters.length]; // Initialisé avec des null partout
 
@@ -163,6 +193,10 @@ public class FrameworkServlet extends HttpServlet {
                         } catch (Exception e) {
                             throw new ServletException("Erreur lors de l'upload du fichier pour le paramètre " + parametreName, e);
                         }
+                    }
+
+                    else if (paramType == MySession.class) {
+                        args[i] = new MySession(request.getSession(true));
                     }
 
                     else if (isTypeSimple(paramType)) {

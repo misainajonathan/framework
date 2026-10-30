@@ -1,0 +1,3 @@
+gestion de session:
+- Gestion des sessions utilisateur par exemple dans 2 navigateurs differents la gestion des sessions est differente
+- stockage dans une context de la session_id et de la cle map 
