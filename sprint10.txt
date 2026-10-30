@@ -1,0 +1,2 @@
+- role:
+    - ajout d'une authentification
