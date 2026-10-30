@@ -142,18 +142,18 @@ public class FrameworkServlet extends HttpServlet {
                     }
 
                     MySession session = new MySession(httpSession);
-                    // Object roleSession = session.get("role");
+                    Object roleSession = session.get("role");
 
-                    // if (roleSession == null) {
-                    //     response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Authentification requise");
-                    //     return;
-                    // }
+                    if (roleSession == null) {
+                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Authentification requise");
+                        return;
+                    }
 
-                    // String roleRequis = auth.role();
-                    // if (!roleRequis.isEmpty() && !roleRequis.equals(roleSession.toString())) {
-                    //     response.sendError(HttpServletResponse.SC_FORBIDDEN, "Role insuffisant");
-                    //     return;
-                    // }
+                    String roleRequis = auth.role();
+                    if (!roleRequis.isEmpty() && !roleRequis.equals(roleSession.toString())) {
+                        response.sendError(HttpServletResponse.SC_FORBIDDEN, "Role insuffisant");
+                        return;
+                    }
                 }
 
 
